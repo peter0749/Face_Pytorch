@@ -202,8 +202,10 @@ def train(args):
                 _print('Current Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters: {}'.format(
                     best_lfw_acc, best_lfw_iters, best_apd_score, best_apd_iters))
 
-                vis.plot_curves({'lfw': np.mean(lfw_accs), 'apd': apd_score}, iters=total_iters,
-                                title='test accuracy', xlabel='iters', ylabel='test accuracy')
+                vis.plot_curves({'lfw': np.mean(lfw_accs)}, iters=total_iters,
+                                title=' LFW test accuracy', xlabel='iters', ylabel='test accuracy')
+                vis.plot_curves({'apd': apd_score}, iters=total_iters,
+                                title=' APD test AUC_ROC', xlabel='iters', ylabel='test auc_roc')
                 net.train()
 
     _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters {}'.format(
