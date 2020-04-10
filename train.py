@@ -23,8 +23,6 @@ from utils.visualize import Visualizer
 from utils.logging import init_log
 from dataset.casia_webface import CASIAWebFace
 from dataset.lfw import LFW
-from dataset.agedb import AgeDB30
-from dataset.cfp import CFP_FP
 from torch.optim import lr_scheduler
 import torch.optim as optim
 import time
@@ -63,12 +61,6 @@ def train(args):
     lfwdataset = LFW(args.lfw_test_root, args.lfw_file_list, transform=transform)
     lfwloader = torch.utils.data.DataLoader(lfwdataset, batch_size=128,
                                              shuffle=False, num_workers=4, drop_last=False)
-    agedbdataset = AgeDB30(args.agedb_test_root, args.agedb_file_list, transform=transform)
-    agedbloader = torch.utils.data.DataLoader(agedbdataset, batch_size=128,
-                                            shuffle=False, num_workers=4, drop_last=False)
-    cfpfpdataset = CFP_FP(args.cfpfp_test_root, args.cfpfp_file_list, transform=transform)
-    cfpfploader = torch.utils.data.DataLoader(cfpfpdataset, batch_size=128,
-                                              shuffle=False, num_workers=4, drop_last=False)
 
     # define backbone and margin layer
     if args.backbone == 'MobileFace':
@@ -124,10 +116,6 @@ def train(args):
 
     best_lfw_acc = 0.0
     best_lfw_iters = 0
-    best_agedb30_acc = 0.0
-    best_agedb30_iters = 0
-    best_cfp_fp_acc = 0.0
-    best_cfp_fp_iters = 0
     total_iters = 0
     vis = Visualizer(env=args.model_pre + args.backbone)
     for epoch in range(1, args.total_epoch + 1):
@@ -196,30 +184,15 @@ def train(args):
                     best_lfw_acc = np.mean(lfw_accs) * 100
                     best_lfw_iters = total_iters
 
-                # test model on AgeDB30
-                getFeatureFromTorch('./result/cur_agedb30_result.mat', net, device, agedbdataset, agedbloader)
-                age_accs = evaluation_10_fold('./result/cur_agedb30_result.mat')
-                _print('AgeDB-30 Ave Accuracy: {:.4f}'.format(np.mean(age_accs) * 100))
-                if best_agedb30_acc <= np.mean(age_accs) * 100:
-                    best_agedb30_acc = np.mean(age_accs) * 100
-                    best_agedb30_iters = total_iters
+                _print('Current Best Accuracy: LFW: {:.4f} in iters: {}'.format(
+                    best_lfw_acc, best_lfw_iters))
 
-                # test model on CFP-FP
-                getFeatureFromTorch('./result/cur_cfpfp_result.mat', net, device, cfpfpdataset, cfpfploader)
-                cfp_accs = evaluation_10_fold('./result/cur_cfpfp_result.mat')
-                _print('CFP-FP Ave Accuracy: {:.4f}'.format(np.mean(cfp_accs) * 100))
-                if best_cfp_fp_acc <= np.mean(cfp_accs) * 100:
-                    best_cfp_fp_acc = np.mean(cfp_accs) * 100
-                    best_cfp_fp_iters = total_iters
-                _print('Current Best Accuracy: LFW: {:.4f} in iters: {}, AgeDB-30: {:.4f} in iters: {} and CFP-FP: {:.4f} in iters: {}'.format(
-                    best_lfw_acc, best_lfw_iters, best_agedb30_acc, best_agedb30_iters, best_cfp_fp_acc, best_cfp_fp_iters))
-
-                vis.plot_curves({'lfw': np.mean(lfw_accs), 'agedb-30': np.mean(age_accs), 'cfp-fp': np.mean(cfp_accs)}, iters=total_iters,
+                vis.plot_curves({'lfw': np.mean(lfw_accs)}, iters=total_iters,
                                 title='test accuracy', xlabel='iters', ylabel='test accuracy')
                 net.train()
 
-    _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}, AgeDB-30: {:.4f} in iters: {} and CFP-FP: {:.4f} in iters: {}'.format(
-        best_lfw_acc, best_lfw_iters, best_agedb30_acc, best_agedb30_iters, best_cfp_fp_acc, best_cfp_fp_iters))
+    _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}'.format(
+        best_lfw_acc, best_lfw_iters))
     print('finishing training')
 
 
@@ -229,10 +202,6 @@ if __name__ == '__main__':
     parser.add_argument('--train_file_list', type=str, default='/media/ramdisk/msra_align_train.list', help='train list')
     parser.add_argument('--lfw_test_root', type=str, default='/media/sda/lfw/lfw_align_112', help='lfw image root')
     parser.add_argument('--lfw_file_list', type=str, default='/media/sda/lfw/pairs.txt', help='lfw pair file list')
-    parser.add_argument('--agedb_test_root', type=str, default='/media/sda/AgeDB-30/agedb30_align_112', help='agedb image root')
-    parser.add_argument('--agedb_file_list', type=str, default='/media/sda/AgeDB-30/agedb_30_pair.txt', help='agedb pair file list')
-    parser.add_argument('--cfpfp_test_root', type=str, default='/media/sda/CFP-FP/cfp_fp_aligned_112', help='agedb image root')
-    parser.add_argument('--cfpfp_file_list', type=str, default='/media/sda/CFP-FP/cfp_fp_pair.txt', help='agedb pair file list')
 
     parser.add_argument('--backbone', type=str, default='SERes100_IR', help='MobileFace, Res50_IR, SERes50_IR, Res100_IR, SERes100_IR, Attention_56, Attention_92')
     parser.add_argument('--margin_type', type=str, default='ArcFace', help='ArcFace, CosFace, SphereFace, MultiMargin, Softmax')

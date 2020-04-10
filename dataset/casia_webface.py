@@ -20,6 +20,7 @@ def img_loader(path):
     try:
         with open(path, 'rb') as f:
             img = cv2.imread(path)
+            img = cv2.resize(img, (112,112), interpolation=cv2.INTER_AREA)
             if len(img.shape) == 2:
                 img = np.stack([img] * 3, 2)
             return img
@@ -71,8 +72,8 @@ class CASIAWebFace(data.Dataset):
 
 
 if __name__ == '__main__':
-    root = 'D:/data/webface_align_112'
-    file_list = 'D:/data/webface_align_train.list'
+    root = '/media/peter0749/63b135e6-bbe2-4e5b-8456-72b5608b7814/CASIA-WebFace'
+    file_list = '/media/peter0749/63b135e6-bbe2-4e5b-8456-72b5608b7814/casia-webface-list.txt'
 
     transform = transforms.Compose([
         transforms.ToTensor(),  # range [0, 255] -> [0.0,1.0]

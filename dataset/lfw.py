@@ -20,6 +20,7 @@ def img_loader(path):
     try:
         with open(path, 'rb') as f:
             img = cv2.imread(path)
+            img = cv2.resize(img, (112,112), interpolation=cv2.INTER_AREA)
             if len(img.shape) == 2:
                 img = np.stack([img] * 3, 2)
             return img
@@ -78,8 +79,8 @@ class LFW(data.Dataset):
 
 
 if __name__ == '__main__':
-    root = 'D:/data/lfw_align_112'
-    file_list = 'D:/data/pairs.txt'
+    root = '/media/peter0749/63b135e6-bbe2-4e5b-8456-72b5608b7814/lfw/lfwa'
+    file_list = '/media/peter0749/63b135e6-bbe2-4e5b-8456-72b5608b7814/lfw/pairs.txt'
 
     transform = transforms.Compose([
         transforms.ToTensor(),  # range [0, 255] -> [0.0,1.0]
@@ -91,5 +92,6 @@ if __name__ == '__main__':
     trainloader = data.DataLoader(dataset, batch_size=64, shuffle=False, num_workers=2, drop_last=False)
     print(len(dataset))
     for data in trainloader:
+        print(len(data))
         for d in data:
-            print(d[0].shape)
+            print(len(d), d[0].shape)
