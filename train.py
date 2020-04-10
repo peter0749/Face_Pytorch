@@ -23,10 +23,13 @@ from utils.visualize import Visualizer
 from utils.logging import init_log
 from dataset.casia_webface import CASIAWebFace
 from dataset.lfw import LFW
+from dataset.apd import APD
 from torch.optim import lr_scheduler
 import torch.optim as optim
 import time
 from eval_lfw import evaluation_10_fold, getFeatureFromTorch
+from eval_apd import evaluation as apd_evaluation
+from eval_apd import getFeatureFromTorch as apd_getFeatureFromTorch
 import numpy as np
 import torchvision.transforms as transforms
 import argparse
@@ -60,6 +63,9 @@ def train(args):
     # test dataset
     lfwdataset = LFW(args.lfw_test_root, args.lfw_file_list, transform=transform)
     lfwloader = torch.utils.data.DataLoader(lfwdataset, batch_size=128,
+                                             shuffle=False, num_workers=4, drop_last=False)
+    apd_dataset = APD(args.apd_test_root, transform=transform)
+    apd_loader = torch.utils.data.DataLoader(apd_dataset, batch_size=128,
                                              shuffle=False, num_workers=4, drop_last=False)
 
     # define backbone and margin layer
@@ -116,6 +122,8 @@ def train(args):
 
     best_lfw_acc = 0.0
     best_lfw_iters = 0
+    best_apd_score = 0.0
+    best_apd_iters = 0
     total_iters = 0
     vis = Visualizer(env=args.model_pre + args.backbone)
     for epoch in range(1, args.total_epoch + 1):
@@ -184,15 +192,22 @@ def train(args):
                     best_lfw_acc = np.mean(lfw_accs) * 100
                     best_lfw_iters = total_iters
 
-                _print('Current Best Accuracy: LFW: {:.4f} in iters: {}'.format(
-                    best_lfw_acc, best_lfw_iters))
+                apd_getFeatureFromTorch('./result/cur_lfw_result.pkl', net, device, apd_dataset, apd_loader, verbose=False)
+                apd_score = apd_evaluation(args.apd_positive_pair, args.apd_negative_pair, './result/cur_lfw_result.pkl')[0]
+                _print('APD AUC_ROC: {:.4f}'.format(apd_score * 100))
+                if best_apd_score <= apd_score * 100:
+                    best_apd_score = apd_score * 100
+                    best_apd_iters = total_iters
 
-                vis.plot_curves({'lfw': np.mean(lfw_accs)}, iters=total_iters,
+                _print('Current Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters: {}'.format(
+                    best_lfw_acc, best_lfw_iters, best_apd_score, best_apd_iters))
+
+                vis.plot_curves({'lfw': np.mean(lfw_accs), 'apd': apd_score}, iters=total_iters,
                                 title='test accuracy', xlabel='iters', ylabel='test accuracy')
                 net.train()
 
-    _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}'.format(
-        best_lfw_acc, best_lfw_iters))
+    _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters {}'.format(
+        best_lfw_acc, best_lfw_iters, best_apd_score, best_apd_iters))
     print('finishing training')
 
 
@@ -202,6 +217,9 @@ if __name__ == '__main__':
     parser.add_argument('--train_file_list', type=str, default='/media/ramdisk/msra_align_train.list', help='train list')
     parser.add_argument('--lfw_test_root', type=str, default='/media/sda/lfw/lfw_align_112', help='lfw image root')
     parser.add_argument('--lfw_file_list', type=str, default='/media/sda/lfw/pairs.txt', help='lfw pair file list')
+    parser.add_argument('--apd_test_root', type=str, default='', help='apd image root')
+    parser.add_argument('--apd_positive_pair', type=str, default='', help='')
+    parser.add_argument('--apd_negative_pair', type=str, default='', help='')
 
     parser.add_argument('--backbone', type=str, default='SERes100_IR', help='MobileFace, Res50_IR, SERes50_IR, Res100_IR, SERes100_IR, Attention_56, Attention_92')
     parser.add_argument('--margin_type', type=str, default='ArcFace', help='ArcFace, CosFace, SphereFace, MultiMargin, Softmax')
