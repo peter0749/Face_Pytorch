@@ -19,7 +19,6 @@ from margin.ArcMarginProduct import ArcMarginProduct
 from margin.MultiMarginProduct import MultiMarginProduct
 from margin.CosineMarginProduct import CosineMarginProduct
 from margin.InnerProduct import InnerProduct
-#from utils.visualize import Visualizer
 from tensorboardX import SummaryWriter
 from utils.logging import init_log
 from dataset.casia_webface import CASIAWebFace
@@ -126,8 +125,10 @@ def train(args):
     best_apd_score = 0.0
     best_apd_iters = 0
     total_iters = 0
-    #vis = Visualizer(env=args.model_pre + args.backbone)
-    tb_log = SummaryWriter()
+    tb_log_dir = args.tensorboard_prefix + '/' + args.experiment_name
+    if not os.path.exists(tb_log_dir):
+        os.makedirs(tb_log_dir)
+    tb_log = SummaryWriter(tb_log_dir)
     for epoch in range(1, args.total_epoch + 1):
         exp_lr_scheduler.step()
         # train model
@@ -237,6 +238,8 @@ if __name__ == '__main__':
     parser.add_argument('--net_path', type=str, default='', help='resume model')
     parser.add_argument('--margin_path', type=str, default='', help='resume model')
     parser.add_argument('--save_dir', type=str, default='./model', help='model save dir')
+    parser.add_argument('--tensorboard_prefix', type=str, default='./tensorboard', help='Tensorboard directory')
+    parser.add_argument('--experiment_name', type=str, default='experiment_1', help='')
     parser.add_argument('--model_pre', type=str, default='SERES100_', help='model prefix')
     parser.add_argument('--gpus', type=str, default='0,1,2,3', help='model prefix')
 

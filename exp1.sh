@@ -15,6 +15,7 @@ TEST_FREQ=500
 BACKBONE="Res50_IR"
 PREFIX="Res50_IR_Softmax"
 SAVE_DIR="./model_Res50"
+EXPERIMENT_NAME="ResNet50-Softmax"
 
-python train.py --train_root "$TRAIN_ROOT" --train_file_list "$TRAIN_FILE_LIST" --lfw_test_root "$LFW_TEST_ROOT" --lfw_file_list "$LFW_FILE_LIST" --apd_test_root "$APD_TEST_ROOT" --apd_positive_pair "$APD_POSITIVE" --apd_negative_pair "$APD_NEGATIVE" --margin_type "$LOSS_TYPE" --feature_dim $DIM --batch_size $BS --save_freq $SAVE_FREQ --test_freq $TEST_FREQ --gpus 0 --backbone "$BACKBONE" --model_pre "$PREFIX" --save_dir "$SAVE_DIR"
+python train.py --train_root "$TRAIN_ROOT" --train_file_list "$TRAIN_FILE_LIST" --lfw_test_root "$LFW_TEST_ROOT" --lfw_file_list "$LFW_FILE_LIST" --apd_test_root "$APD_TEST_ROOT" --apd_positive_pair "$APD_POSITIVE" --apd_negative_pair "$APD_NEGATIVE" --margin_type "$LOSS_TYPE" --feature_dim $DIM --batch_size $BS --save_freq $SAVE_FREQ --test_freq $TEST_FREQ --gpus 0 --backbone "$BACKBONE" --model_pre "$PREFIX" --save_dir "$SAVE_DIR" --experiment_name "$EXPERIMENT_NAME"
 
