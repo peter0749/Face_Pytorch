@@ -19,7 +19,8 @@ from margin.ArcMarginProduct import ArcMarginProduct
 from margin.MultiMarginProduct import MultiMarginProduct
 from margin.CosineMarginProduct import CosineMarginProduct
 from margin.InnerProduct import InnerProduct
-from utils.visualize import Visualizer
+#from utils.visualize import Visualizer
+from tensorboardX import SummaryWriter
 from utils.logging import init_log
 from dataset.casia_webface import CASIAWebFace
 from dataset.lfw import LFW
@@ -125,7 +126,8 @@ def train(args):
     best_apd_score = 0.0
     best_apd_iters = 0
     total_iters = 0
-    vis = Visualizer(env=args.model_pre + args.backbone)
+    #vis = Visualizer(env=args.model_pre + args.backbone)
+    tb_log = SummaryWriter()
     for epoch in range(1, args.total_epoch + 1):
         exp_lr_scheduler.step()
         # train model
@@ -152,10 +154,9 @@ def train(args):
                 correct = (np.array(predict.cpu()) == np.array(label.data.cpu())).sum()
                 time_cur = (time.time() - since) / 100
                 since = time.time()
-                vis.plot_curves({'softmax loss': total_loss.item()}, iters=total_iters, title='train loss',
-                                xlabel='iters', ylabel='train loss')
-                vis.plot_curves({'train accuracy': correct / total}, iters=total_iters, title='train accuracy', xlabel='iters',
-                                ylabel='train accuracy')
+                tb_log.add_scalar('train/loss', total_loss.item(), total_iters)
+                tb_log.add_scalar('train/accuracy', correct / total, total_iters)
+                tb_log.add_scalar('train/lr', exp_lr_scheduler.get_lr()[0], total_iters)
 
                 _print("Iters: {:0>6d}/[{:0>2d}], loss: {:.4f}, train_accuracy: {:.4f}, time: {:.2f} s/iter, learning rate: {}".format(total_iters, epoch, total_loss.item(), correct/total, time_cur, exp_lr_scheduler.get_lr()[0]))
 
@@ -202,15 +203,15 @@ def train(args):
                 _print('Current Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters: {}'.format(
                     best_lfw_acc, best_lfw_iters, best_apd_score, best_apd_iters))
 
-                vis.plot_curves({'lfw': np.mean(lfw_accs)}, iters=total_iters,
-                                title=' LFW test accuracy', xlabel='iters', ylabel='test accuracy')
-                vis.plot_curves({'apd': apd_score}, iters=total_iters,
-                                title=' APD test AUC_ROC', xlabel='iters', ylabel='test auc_roc')
+                tb_log.add_scalar('lfw/accuracy', np.mean(lfw_accs), total_iters)
+                tb_log.add_scalar('apd/auc_roc', apd_score, total_iters)
+
                 net.train()
 
     _print('Finally Best Accuracy: LFW: {:.4f} in iters: {}, APD: {:.4f} in iters {}'.format(
         best_lfw_acc, best_lfw_iters, best_apd_score, best_apd_iters))
     print('finishing training')
+    tb_log.close()
 
 
 if __name__ == '__main__':
